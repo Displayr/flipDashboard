@@ -1,0 +1,44 @@
+version: 2.1
+orbs:
+  r-packages: displayr/r-packages@dev:first
+parameters:
+  trigger-message:
+    type: string
+    default: ""
+  remote-deps:
+    type: string
+    default: ""
+  plugins-branch:
+    type: string
+    default: ""
+  triggered-packages:
+    type: string
+    default: ""
+workflows:
+  build-and-check-R-package:
+    jobs:
+      - r-packages/build-and-check-package:
+          name: BuildAndCheckPackage
+          context:
+            - r_packages
+          remote-deps: << pipeline.parameters.remote-deps >>
+          separate-test-job: false
+      - r-packages/deploy-package:
+          requires:
+            - BuildAndCheckPackage
+          context:
+            - r_packages
+          filters:
+            branches:
+              only:
+                - master
+      - r-packages/trigger-revdeps:
+          requires:
+            - BuildAndCheckPackage
+          context:
+            - r_packages
+          remote-deps: << pipeline.parameters.remote-deps >>
+          plugins-branch: << pipeline.parameters.plugins-branch >>
+          trigger-message: << pipeline.parameters.trigger-message >>
+          triggered-packages: << pipeline.parameters.triggered-packages >>
+
